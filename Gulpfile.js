@@ -1,3 +1,7 @@
+//
+// CONFIG
+//
+
 // Select the CSS preprocessor to use
 // Available options are 'less', 'sass'; other values
 // will disable CSS preprocessing
@@ -29,8 +33,12 @@ const USE_NOTIFIER_TOASTS = true;
 const LOG_ERRORS_TO_CONSOLE = !USE_NOTIFIER_TOASTS;
 
 // By default no minification is enabled. Using the `gulp prod` task enables
-// minification of CSS and JS and disabled the sourcemaps.
+// minification of CSS and JS and disables the sourcemaps.
 let PRODUCTION = false;
+
+//
+// MODULES
+//
 
 let autoprefixer = require('autoprefixer');
 let babel = require('gulp-babel');
@@ -50,6 +58,10 @@ let source = require('vinyl-source-stream');
 let sourcemaps = require('gulp-sourcemaps');
 let uglify = require('gulp-uglify');
 let watch = require('gulp-watch');
+
+//
+// HELPERS AND SETTINGS
+//
 
 let plumberConfig = {
     errorHandler: function (err) {
@@ -81,6 +93,10 @@ let babelConfig = {
         'es2015'
     ]
 };
+
+//
+// TASKS
+//
 
 //
 // Run `gulp less` to compile the LessCSS files.
@@ -172,8 +188,8 @@ gulp.task('watch', () => {
 });
 
 //
-// Run `gulp watch` to automatically compile the LESS, SASS and JS
-// files when one of them is modified.
+// Run `gulp prod` to compile the LESS/SASS and JS files with
+// minification enabled.
 //
 gulp.task('prod', () => {
     PRODUCTION = true;

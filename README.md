@@ -4,7 +4,7 @@ Compiles SASS and EcmaScript 2015 files.
 
 ## How do I g-?
 
-Clone the repo, `cd` into it and run `npm install`. Make sure you also have Gulp installed globally (`npm i -g gulp`).
+Clone the repo, `cd` into it and run `npm install` or `yarn install`. Make sure you also have Gulp installed globally (`npm i -g gulp`).
 
 ## And then what sh-?
 
