@@ -48,7 +48,7 @@ let buffer = require('vinyl-buffer');
 let gulp = require('gulp');
 let gulpif = require('gulp-if');
 let less = require('gulp-less');
-let minifycss = require('gulp-minify-css');
+let cleancss = require('gulp-clean-css');
 let notify = require('gulp-notify');
 let plumber = require('gulp-plumber');
 let rename = require('gulp-rename');
@@ -96,7 +96,7 @@ gulp.task('less', () => {
         .pipe(gulpif(!PRODUCTION, sourcemaps.init()))
         .pipe(less())
         .pipe(autoprefixer())
-        .pipe(gulpif(PRODUCTION, minifycss()))
+        .pipe(gulpif(PRODUCTION, cleancss()))
         .pipe(gulpif(!PRODUCTION, sourcemaps.write()))
         .pipe(rename(CSS_OUTPUT_FILENAME))
         .pipe(gulp.dest(CSS_OUTPUT_PATH));
@@ -111,7 +111,7 @@ gulp.task('sass', () => {
         .pipe(gulpif(!PRODUCTION, sourcemaps.init()))
         .pipe(sass())
         .pipe(autoprefixer())
-        .pipe(gulpif(PRODUCTION, minifycss()))
+        .pipe(gulpif(PRODUCTION, cleancss()))
         .pipe(gulpif(!PRODUCTION, sourcemaps.write()))
         .pipe(rename(CSS_OUTPUT_FILENAME))
         .pipe(gulp.dest(CSS_OUTPUT_PATH));
