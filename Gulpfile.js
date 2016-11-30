@@ -40,7 +40,7 @@ let PRODUCTION = false;
 // MODULES
 //
 
-let autoprefixer = require('autoprefixer');
+let autoprefixer = require('gulp-autoprefixer');
 let babel = require('gulp-babel');
 let batch = require('gulp-batch');
 let browserify = require('browserify');
@@ -51,7 +51,6 @@ let less = require('gulp-less');
 let minifycss = require('gulp-minify-css');
 let notify = require('gulp-notify');
 let plumber = require('gulp-plumber');
-let postcss = require('gulp-postcss');
 let rename = require('gulp-rename');
 let sass = require('gulp-sass');
 let source = require('vinyl-source-stream');
@@ -62,6 +61,8 @@ let watch = require('gulp-watch');
 //
 // HELPERS AND SETTINGS
 //
+
+let babelConfig = {presets: ['es2015']};
 
 let plumberConfig = {
     errorHandler: function (err) {
@@ -82,18 +83,6 @@ let plumberConfig = {
     }
 };
 
-let postCssConfig = [
-    autoprefixer({
-        browsers: ['last 2 versions']
-    })
-];
-
-let babelConfig = {
-    presets: [
-        'es2015'
-    ]
-};
-
 //
 // TASKS
 //
@@ -106,7 +95,7 @@ gulp.task('less', () => {
         .pipe(plumber(plumberConfig))
         .pipe(gulpif(!PRODUCTION, sourcemaps.init()))
         .pipe(less())
-        .pipe(postcss(postCssConfig))
+        .pipe(autoprefixer())
         .pipe(gulpif(PRODUCTION, minifycss()))
         .pipe(gulpif(!PRODUCTION, sourcemaps.write()))
         .pipe(rename(CSS_OUTPUT_FILENAME))
@@ -121,7 +110,7 @@ gulp.task('sass', () => {
         .pipe(plumber(plumberConfig))
         .pipe(gulpif(!PRODUCTION, sourcemaps.init()))
         .pipe(sass())
-        .pipe(postcss(postCssConfig))
+        .pipe(autoprefixer())
         .pipe(gulpif(PRODUCTION, minifycss()))
         .pipe(gulpif(!PRODUCTION, sourcemaps.write()))
         .pipe(rename(CSS_OUTPUT_FILENAME))
@@ -148,7 +137,7 @@ gulp.task('css', () => {
 gulp.task('js', () => {
     let b = browserify({
         entries: MAIN_JS_FILE,
-        debug: true
+        debug: PRODUCTION
     });
 
     return b.bundle()
