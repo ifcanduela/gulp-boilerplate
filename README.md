@@ -1,6 +1,6 @@
 # Gulp boilerplate
 
-Compiles Less and Sass stylesheet and EcmaScript 2015 files.
+Compiles Less and Sass stylesheets and EcmaScript 2015 files.
 
 ## How do I g-?
 

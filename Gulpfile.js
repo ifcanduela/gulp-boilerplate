@@ -3,7 +3,7 @@
 //
 
 // Select the CSS preprocessor to use
-// Available options are 'less', 'sass'; other values
+// Available options are 'less' and 'sass'; other values
 // will disable CSS preprocessing
 const CSS_PREPROCESSOR = 'less';
 
@@ -135,9 +135,11 @@ gulp.task('css', () => {
 // them using Babel
 //
 gulp.task('js', () => {
+    if (!COMPILE_JS) return;
+
     let b = browserify({
         entries: MAIN_JS_FILE,
-        debug: PRODUCTION
+        debug: !PRODUCTION
     });
 
     return b.bundle()
@@ -183,17 +185,8 @@ gulp.task('watch', () => {
 gulp.task('prod', () => {
     PRODUCTION = true;
 
-    if (CSS_PREPROCESSOR === 'sass') {
-        gulp.start('sass');
-    }
-
-    if (CSS_PREPROCESSOR === 'less') {
-        gulp.start('less');
-    }
-
-    if (COMPILE_JS) {
-        gulp.start('js');
-    }
+    gulp.start('css');
+    gulp.start('js');
 });
 
 gulp.task('default', [
