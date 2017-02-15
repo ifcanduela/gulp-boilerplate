@@ -2,75 +2,116 @@
 // CONFIG
 //
 
-// Select the CSS preprocessor to use
-// Available options are 'less' and 'sass'; other values
-// will disable CSS preprocessing
-const CSS_PREPROCESSOR = 'less';
+var CONFIG = {
+    css: {
+        // Select which CSS preprocessor to use (less/sass/stylus)
+        // Set to false to skip CSS compilation
+        preprocessor: 'less',
 
-// Use Browserify to bundle JavaScript files
-const COMPILE_JS = true;
+        outputPath: './css/',
+        outputFileName: 'styles.css',
 
-const JS_WATCH_GLOB = './js/src/**/*.js';
-const MAIN_JS_FILE = './js/src/app.js';
-const JS_OUTPUT_PATH = './js/';
-const JS_OUTPUT_FILENAME = 'app.bundle.js';
+        // Set to false to disable Autoprefixer
+        autoPrefixer: {},
 
-const LESS_WATCH_GLOB = './less/**/*.less';
-const SASS_WATCH_GLOB = './scss/**/*.scss';
+        sourceMaps: {},
+    },
 
-const MAIN_LESS_FILE = './less/main.less';
-const MAIN_SASS_FILE = './scss/main.scss';
+    js: {
+        compile: true,
 
-const CSS_OUTPUT_PATH = './css/';
-const CSS_OUTPUT_FILENAME = 'styles.css';
+        // Use Browserify to bundle JavaScript files
+        // Set to false to skip JavaScript processing
+        watchGlob: './js/src/**/*.js',
+        outputPath: './js/',
+        // mainFile: './js/src/app.js',
+        // outputFileName: 'app.bundle.js',
+        files: {
+            './js/src/app.js': 'app.bundle.js'
+        },
 
-// Choose whether to display a toast on error or not
-const USE_NOTIFIER_TOASTS = true;
+        babel: {
+            presets: ['es2015'],
+        },
 
-// Log errors to the console.
-// If the toasts are enabled the gulp-notify plugin will automatically log
-// to the console, so this is better disabled.
-const LOG_ERRORS_TO_CONSOLE = !USE_NOTIFIER_TOASTS;
+        sourceMaps: {
+            loadMaps: true,
+        },
+    },
 
-// By default no minification is enabled. Using the `gulp prod` task enables
-// minification of CSS and JS and disables the sourcemaps.
-let PRODUCTION = false;
+    less: {
+        watchGlob: './less/**/*.less',
+        mainFile: './less/main.less',
+    },
+
+    sass: {
+        watchGlob: './scss/**/*.scss',
+        mainFile: './scss/main.scss',
+    },
+
+    stylus: {
+        watchGlob: './stylus/**/*.styl',
+        mainFile: './stylus/main.styl',
+    },
+
+    log: {
+        // Choose whether to display a toast on error or not
+        displayToast: true,
+        // Log errors to the console.
+        // If the toasts are enabled the gulp-notify plugin will automatically log
+        // to the console, so this is better disabled.
+        printToConsole: false,
+    },
+
+    // By default no minification is enabled. Using the `gulp prod` task enables
+    // minification of CSS and JS and disables the sourcemaps.
+    production: false,
+};
 
 //
 // MODULES
 //
 
-let autoprefixer = require('gulp-autoprefixer');
-let babel = require('gulp-babel');
-let batch = require('gulp-batch');
-let browserify = require('browserify');
-let buffer = require('vinyl-buffer');
-let gulp = require('gulp');
-let gulpif = require('gulp-if');
-let less = require('gulp-less');
-let cleancss = require('gulp-clean-css');
-let notify = require('gulp-notify');
-let plumber = require('gulp-plumber');
-let rename = require('gulp-rename');
-let sass = require('gulp-sass');
-let source = require('vinyl-source-stream');
-let sourcemaps = require('gulp-sourcemaps');
-let uglify = require('gulp-uglify');
-let watch = require('gulp-watch');
+var autoprefixer = require('gulp-autoprefixer');
+var babel = require('gulp-babel');
+var batch = require('gulp-batch');
+var browserify = require('browserify');
+var buffer = require('vinyl-buffer');
+var cleancss = require('gulp-clean-css');
+var css = false;
+var gulp = require('gulp');
+var gulpif = require('gulp-if');
+var notify = require('gulp-notify');
+var plumber = require('gulp-plumber');
+var rename = require('gulp-rename');
+var source = require('vinyl-source-stream');
+var sourcemaps = require('gulp-sourcemaps');
+var uglify = require('gulp-uglify');
+var watch = require('gulp-watch');
+
+switch (CONFIG.css.preprocessor) {
+    case 'less':
+        css = require('gulp-less');
+        break;
+    case 'sass':
+        css = require('gulp-sass');
+        break;
+    case 'stylus':
+        css = require('gulp-stylus');
+        break;
+}
 
 //
 // HELPERS AND SETTINGS
 //
 
-let babelConfig = {presets: ['es2015']};
-
-let plumberConfig = {
+var plumberConfig = {
     errorHandler: function (err) {
-        if (LOG_ERRORS_TO_CONSOLE) {
+        if (CONFIG.log.printToConsole) {
             console.log(err.toString());
         }
 
-        if (USE_NOTIFIER_TOASTS) {
+        if (CONFIG.log.displayToast) {
             notify.onError({
                 title: 'Gulp',
                 subtitle: 'Task error',
@@ -88,45 +129,21 @@ let plumberConfig = {
 //
 
 //
-// Run `gulp less` to compile the LessCSS files.
-//
-gulp.task('less', () => {
-    return gulp.src(MAIN_LESS_FILE)
-        .pipe(plumber(plumberConfig))
-        .pipe(gulpif(!PRODUCTION, sourcemaps.init()))
-        .pipe(less())
-        .pipe(autoprefixer())
-        .pipe(gulpif(PRODUCTION, cleancss()))
-        .pipe(gulpif(!PRODUCTION, sourcemaps.write()))
-        .pipe(rename(CSS_OUTPUT_FILENAME))
-        .pipe(gulp.dest(CSS_OUTPUT_PATH));
-});
-
-//
-// Run `gulp sass` to compile the SCSS files.
-//
-gulp.task('sass', () => {
-    return gulp.src(MAIN_SASS_FILE)
-        .pipe(plumber(plumberConfig))
-        .pipe(gulpif(!PRODUCTION, sourcemaps.init()))
-        .pipe(sass())
-        .pipe(autoprefixer())
-        .pipe(gulpif(PRODUCTION, cleancss()))
-        .pipe(gulpif(!PRODUCTION, sourcemaps.write()))
-        .pipe(rename(CSS_OUTPUT_FILENAME))
-        .pipe(gulp.dest(CSS_OUTPUT_PATH));
-});
-
-//
 // Run `gulp css` to compile the stylesheets using the configured preprocessor.
 //
 gulp.task('css', () => {
-    if (CSS_PREPROCESSOR === 'less') {
-        gulp.start('less');
-    }
+    if (css) {
+        let preprocessor = CONFIG[CONFIG.css.preprocessor];
 
-    if (CSS_PREPROCESSOR === 'sass') {
-        gulp.start('sass');
+        return gulp.src(preprocessor.mainFile)
+            .pipe(plumber(plumberConfig))
+            .pipe(gulpif(!CONFIG.production, sourcemaps.init(CONFIG.css.sourceMaps)))
+            .pipe(css())
+            .pipe(gulpif(CONFIG.css.autoPrefixer, autoprefixer(CONFIG.css.autoPrefixer)))
+            .pipe(gulpif(CONFIG.production, cleancss()))
+            .pipe(gulpif(!CONFIG.production, sourcemaps.write()))
+            .pipe(rename(CONFIG.css.outputFileName))
+            .pipe(gulp.dest(CONFIG.css.outputPath));
     }
 });
 
@@ -135,23 +152,28 @@ gulp.task('css', () => {
 // them using Babel
 //
 gulp.task('js', () => {
-    if (!COMPILE_JS) return;
+    if (!CONFIG.js.compile) {
+        return;
+    }
 
-    let b = browserify({
-        entries: MAIN_JS_FILE,
-        debug: !PRODUCTION
-    });
+    for (let inputFileName in CONFIG.js.files) {
+        let outputFileName = CONFIG.js.files[inputFileName];
+        let b = browserify({
+            entries: inputFileName,
+            debug: !CONFIG.production
+        });
 
-    return b.bundle()
-        .on('error', plumberConfig.errorHandler)
-        .pipe(plumber(plumberConfig))
-        .pipe(source(JS_OUTPUT_FILENAME))
-        .pipe(buffer())
-        .pipe(gulpif(!PRODUCTION, sourcemaps.init({loadMaps: true})))
-        .pipe(babel(babelConfig))
-        .pipe(gulpif(PRODUCTION, uglify()))
-        .pipe(gulpif(!PRODUCTION, sourcemaps.write()))
-        .pipe(gulp.dest(JS_OUTPUT_PATH));
+        b.bundle()
+            .on('error', plumberConfig.errorHandler)
+            .pipe(plumber(plumberConfig))
+            .pipe(source(outputFileName))
+            .pipe(buffer())
+            .pipe(gulpif(!CONFIG.production, sourcemaps.init(CONFIG.js.sourceMaps)))
+            .pipe(babel(CONFIG.js.babel))
+            .pipe(gulpif(CONFIG.production, uglify()))
+            .pipe(gulpif(!CONFIG.production, sourcemaps.write()))
+            .pipe(gulp.dest(CONFIG.js.outputPath));
+    }
 });
 
 //
@@ -159,20 +181,16 @@ gulp.task('js', () => {
 // files when one of them is modified.
 //
 gulp.task('watch', () => {
-    if (CSS_PREPROCESSOR === 'sass') {
-        watch(SASS_WATCH_GLOB, batch((events, done) => {
-            gulp.start('sass', done);
+    if (css) {
+        let preprocessor = CONFIG[CONFIG.css.preprocessor];
+
+        watch(preprocessor.watchGlob, batch((events, done) => {
+            gulp.start('css', done);
         }));
     }
 
-    if (CSS_PREPROCESSOR === 'less') {
-        watch(LESS_WATCH_GLOB, batch((events, done) => {
-            gulp.start('less', done);
-        }));
-    }
-
-    if (COMPILE_JS) {
-        watch(JS_WATCH_GLOB, batch((events, done) => {
+    if (CONFIG.js.compile) {
+        watch(CONFIG.js.watchGlob, batch((events, done) => {
             gulp.start('js', done);
         }));
     }
@@ -183,7 +201,7 @@ gulp.task('watch', () => {
 // minification enabled.
 //
 gulp.task('prod', () => {
-    PRODUCTION = true;
+    CONFIG.production = true;
 
     gulp.start('css');
     gulp.start('js');
