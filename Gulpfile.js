@@ -31,7 +31,7 @@ var CONFIG = {
         },
 
         babel: {
-            presets: ['es2015'],
+            presets: ['env'],
         },
 
         sourceMaps: {
@@ -73,7 +73,7 @@ var CONFIG = {
 //
 
 var autoprefixer = require('gulp-autoprefixer');
-var babel = require('gulp-babel');
+var babelify = require('babelify');
 var batch = require('gulp-batch');
 var browserify = require('browserify');
 var buffer = require('vinyl-buffer');
@@ -82,6 +82,7 @@ var css = false;
 var gulp = require('gulp');
 var gulpif = require('gulp-if');
 var notify = require('gulp-notify');
+var path = require('path');
 var plumber = require('gulp-plumber');
 var rename = require('gulp-rename');
 var source = require('vinyl-source-stream');
@@ -158,18 +159,23 @@ gulp.task('js', () => {
 
     for (let inputFileName in CONFIG.js.files) {
         let outputFileName = CONFIG.js.files[inputFileName];
+
+        if (!outputFileName) {
+            outputFileName = path.basename(inputFileName);
+        }
+
         let b = browserify({
             entries: inputFileName,
             debug: !CONFIG.production
         });
 
-        b.bundle()
+        b.transform(babelify, {presets: ["env"]})
+            .bundle()
             .on('error', plumberConfig.errorHandler)
             .pipe(plumber(plumberConfig))
             .pipe(source(outputFileName))
             .pipe(buffer())
             .pipe(gulpif(!CONFIG.production, sourcemaps.init(CONFIG.js.sourceMaps)))
-            .pipe(babel(CONFIG.js.babel))
             .pipe(gulpif(CONFIG.production, uglify()))
             .pipe(gulpif(!CONFIG.production, sourcemaps.write()))
             .pipe(gulp.dest(CONFIG.js.outputPath));
