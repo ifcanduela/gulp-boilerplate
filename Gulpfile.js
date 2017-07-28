@@ -4,67 +4,72 @@
 
 var CONFIG = {
     css: {
-        // Select which CSS preprocessor to use (less/sass/stylus)
-        // Set to false to skip CSS compilation
+        // Select which CSS preprocessor to use (less/sass/stylus).
+        // Set to false to skip CSS compilation.
         preprocessor: 'less',
-
+        // Destination folder for compiled CSS files
         outputPath: './css/',
-        outputFileName: 'styles.css',
-
         // Set to false to disable Autoprefixer
         autoPrefixer: {},
-
+        // Source maps are inlined by default
         sourceMaps: {},
     },
 
     js: {
-        compile: true,
-
-        // Use Browserify to bundle JavaScript files
+        // Use Browserify to bundle JavaScript files.
         // Set to false to skip JavaScript processing
-        watchGlob: './js/src/**/*.js',
+        compile: true,
+        // watch source files
+        watchGlob: './src/js/**/*.js',
+        // Destination folder for compiled JS files
         outputPath: './js/',
-        // mainFile: './js/src/app.js',
-        // outputFileName: 'app.bundle.js',
+        // Entry files for JavaScript compilation
         files: {
-            './js/src/app.js': 'app.bundle.js'
+            './src/js/app.js': 'app.bundle.js'
         },
-
+        // Babel configuration
         babel: {
             presets: ['env'],
         },
-
+        // JavaScript sourcemaps
         sourceMaps: {
             loadMaps: true,
         },
     },
 
     less: {
-        watchGlob: './less/**/*.less',
-        mainFile: './less/main.less',
+        watchGlob: './src/css/**/*.less',
+        files: {
+            './src/css/main.less': 'app.css',
+        },
     },
 
     sass: {
-        watchGlob: './scss/**/*.scss',
-        mainFile: './scss/main.scss',
+        watchGlob: './src/css/**/*.scss',
+        files: {
+            './src/css/main.scss': 'app.css',
+        },
     },
 
     stylus: {
-        watchGlob: './stylus/**/*.styl',
-        mainFile: './stylus/main.styl',
+        watchGlob: './src/css/**/*.styl',
+        files: {
+            './src/css/main.styl': 'app.css',
+        },
     },
 
     log: {
         // Choose whether to display a toast on error or not
         displayToast: true,
-        // Log errors to the console.
-        // If the toasts are enabled the gulp-notify plugin will automatically log
-        // to the console, so this is better disabled.
+        // Log errors to the console
+        // If the toasts are enabled, the gulp-notify plugin will automatically
+        // log to the console, so this is better left disabled
         printToConsole: false,
     },
 
-    // By default no minification is enabled. Using the `gulp prod` task enables
-    // minification of CSS and JS and disables the sourcemaps.
+    // By default no minification is enabled
+    // Using the `gulp prod` task enables minification of CSS and JS and disables
+    // the sourcemaps
     production: false,
 };
 
@@ -136,15 +141,19 @@ gulp.task('css', () => {
     if (css) {
         let preprocessor = CONFIG[CONFIG.css.preprocessor];
 
-        return gulp.src(preprocessor.mainFile)
-            .pipe(plumber(plumberConfig))
-            .pipe(gulpif(!CONFIG.production, sourcemaps.init(CONFIG.css.sourceMaps)))
-            .pipe(css())
-            .pipe(gulpif(CONFIG.css.autoPrefixer, autoprefixer(CONFIG.css.autoPrefixer)))
-            .pipe(gulpif(CONFIG.production, cleancss()))
-            .pipe(gulpif(!CONFIG.production, sourcemaps.write()))
-            .pipe(rename(CONFIG.css.outputFileName))
-            .pipe(gulp.dest(CONFIG.css.outputPath));
+        for (let inputFileName in preprocessor.files) {
+            let outputFileName = preprocessor.files[inputFileName];
+
+            gulp.src(inputFileName)
+                .pipe(plumber(plumberConfig))
+                .pipe(gulpif(!CONFIG.production, sourcemaps.init(CONFIG.css.sourceMaps)))
+                .pipe(css())
+                .pipe(gulpif(CONFIG.css.autoPrefixer, autoprefixer(CONFIG.css.autoPrefixer)))
+                .pipe(gulpif(CONFIG.production, cleancss()))
+                .pipe(gulpif(!CONFIG.production, sourcemaps.write()))
+                .pipe(rename(outputFileName))
+                .pipe(gulp.dest(CONFIG.css.outputPath));
+        }
     }
 });
 
@@ -169,7 +178,7 @@ gulp.task('js', () => {
             debug: !CONFIG.production
         });
 
-        b.transform(babelify, {presets: ["env"]})
+        b.transform(babelify, CONFIG.js.babel)
             .bundle()
             .on('error', plumberConfig.errorHandler)
             .pipe(plumber(plumberConfig))
