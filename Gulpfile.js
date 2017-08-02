@@ -2,11 +2,23 @@
 // CONFIG
 //
 
-var CONFIG = {
+const CONFIG = {
+    staticFiles: {
+        './src/fonts': './fonts',
+        './src/images': './images',
+    },
+
     css: {
-        // Select which CSS preprocessor to use (less/sass/stylus).
-        // Set to false to skip CSS compilation.
+        // Choose a CSS preprocessor to generate stylesheets
         preprocessor: 'less',
+        // preprocessor: 'sass',
+        // preprocessor: 'stylus',
+
+        // Change these settings to fit your preprocessor of choice
+        watchGlob: './src/css/**/*.less',
+        inputFileNames: [
+            './src/css/app.less',
+        ],
         // Destination folder for compiled CSS files
         outputPath: './css/',
         // Set to false to disable Autoprefixer
@@ -17,8 +29,7 @@ var CONFIG = {
 
     js: {
         // Use Browserify to bundle JavaScript files.
-        // Set to false to skip JavaScript processing
-        compile: true,
+
         // watch source files
         watchGlob: './src/js/**/*.js',
         // Destination folder for compiled JS files
@@ -31,30 +42,12 @@ var CONFIG = {
         babel: {
             presets: ['env'],
         },
+        // Browserify root paths (like the `opts.paths` command-line option)
+        paths: [
+        ],
         // JavaScript sourcemaps
         sourceMaps: {
             loadMaps: true,
-        },
-    },
-
-    less: {
-        watchGlob: './src/css/**/*.less',
-        files: {
-            './src/css/main.less': 'app.css',
-        },
-    },
-
-    sass: {
-        watchGlob: './src/css/**/*.scss',
-        files: {
-            './src/css/main.scss': 'app.css',
-        },
-    },
-
-    stylus: {
-        watchGlob: './src/css/**/*.styl',
-        files: {
-            './src/css/main.styl': 'app.css',
         },
     },
 
@@ -77,41 +70,30 @@ var CONFIG = {
 // MODULES
 //
 
-var autoprefixer = require('gulp-autoprefixer');
-var babelify = require('babelify');
-var batch = require('gulp-batch');
-var browserify = require('browserify');
-var buffer = require('vinyl-buffer');
-var cleancss = require('gulp-clean-css');
-var css = false;
-var gulp = require('gulp');
-var gulpif = require('gulp-if');
-var notify = require('gulp-notify');
-var path = require('path');
-var plumber = require('gulp-plumber');
-var rename = require('gulp-rename');
-var source = require('vinyl-source-stream');
-var sourcemaps = require('gulp-sourcemaps');
-var uglify = require('gulp-uglify');
-var watch = require('gulp-watch');
-
-switch (CONFIG.css.preprocessor) {
-    case 'less':
-        css = require('gulp-less');
-        break;
-    case 'sass':
-        css = require('gulp-sass');
-        break;
-    case 'stylus':
-        css = require('gulp-stylus');
-        break;
-}
+let autoprefixer = require('gulp-autoprefixer');
+let babelify = require('babelify');
+let batch = require('gulp-batch');
+let browserify = require('browserify');
+let buffer = require('vinyl-buffer');
+let cleancss = require('gulp-clean-css');
+let css = require('gulp-' + CONFIG.css.preprocessor);
+let fs = require('fs');
+let gulp = require('gulp');
+let gulpif = require('gulp-if');
+let notify = require('gulp-notify');
+let path = require('path');
+let plumber = require('gulp-plumber');
+let rename = require('gulp-rename');
+let source = require('vinyl-source-stream');
+let sourcemaps = require('gulp-sourcemaps');
+let uglify = require('gulp-uglify');
+let watch = require('gulp-watch');
 
 //
 // HELPERS AND SETTINGS
 //
 
-var plumberConfig = {
+let plumberConfig = {
     errorHandler: function (err) {
         if (CONFIG.log.printToConsole) {
             console.log(err.toString());
@@ -135,26 +117,17 @@ var plumberConfig = {
 //
 
 //
-// Run `gulp css` to compile the stylesheets using the configured preprocessor.
+// Run `gulp css` to compile the stylesheets.
 //
 gulp.task('css', () => {
-    if (css) {
-        let preprocessor = CONFIG[CONFIG.css.preprocessor];
-
-        for (let inputFileName in preprocessor.files) {
-            let outputFileName = preprocessor.files[inputFileName];
-
-            gulp.src(inputFileName)
-                .pipe(plumber(plumberConfig))
-                .pipe(gulpif(!CONFIG.production, sourcemaps.init(CONFIG.css.sourceMaps)))
-                .pipe(css())
-                .pipe(gulpif(CONFIG.css.autoPrefixer, autoprefixer(CONFIG.css.autoPrefixer)))
-                .pipe(gulpif(CONFIG.production, cleancss()))
-                .pipe(gulpif(!CONFIG.production, sourcemaps.write()))
-                .pipe(rename(outputFileName))
-                .pipe(gulp.dest(CONFIG.css.outputPath));
-        }
-    }
+    return gulp.src(CONFIG.css.inputFileNames)
+        .pipe(plumber(plumberConfig))
+        .pipe(gulpif(!CONFIG.production, sourcemaps.init(CONFIG.css.sourceMaps)))
+        .pipe(css())
+        .pipe(gulpif(CONFIG.css.autoPrefixer, autoprefixer(CONFIG.css.autoPrefixer)))
+        .pipe(gulpif(CONFIG.production, cleancss()))
+        .pipe(gulpif(!CONFIG.production, sourcemaps.write()))
+        .pipe(gulp.dest(CONFIG.css.outputPath));
 });
 
 //
@@ -162,10 +135,6 @@ gulp.task('css', () => {
 // them using Babel
 //
 gulp.task('js', () => {
-    if (!CONFIG.js.compile) {
-        return;
-    }
-
     for (let inputFileName in CONFIG.js.files) {
         let outputFileName = CONFIG.js.files[inputFileName];
 
@@ -175,6 +144,7 @@ gulp.task('js', () => {
 
         let b = browserify({
             entries: inputFileName,
+            paths: CONFIG.js.paths,
             debug: !CONFIG.production
         });
 
@@ -192,23 +162,37 @@ gulp.task('js', () => {
 });
 
 //
+// Run `gulp copy` to recursively copy folders and files without
+// further processing.
+//
+gulp.task('copy', () => {
+    for (let sourceFolder in CONFIG.staticFiles) {
+        let destinationFolder = CONFIG.staticFiles[sourceFolder];
+
+        if (fs.existsSync(sourceFolder)) {
+            console.log(`Copying ${sourceFolder} to ${destinationFolder}`);
+
+            gulp
+                .src([`${sourceFolder}/**/*`], {base: sourceFolder})
+                .pipe(gulp.dest(destinationFolder));
+        } else {
+            console.log(`Folder ${sourceFolder} not found, skipped`);
+        }
+    }
+});
+
+//
 // Run `gulp watch` to automatically compile the LESS, SASS and JS
 // files when one of them is modified.
 //
 gulp.task('watch', () => {
-    if (css) {
-        let preprocessor = CONFIG[CONFIG.css.preprocessor];
+    watch(CONFIG.css.watchGlob, batch((events, done) => {
+        gulp.start('css', done);
+    }));
 
-        watch(preprocessor.watchGlob, batch((events, done) => {
-            gulp.start('css', done);
-        }));
-    }
-
-    if (CONFIG.js.compile) {
-        watch(CONFIG.js.watchGlob, batch((events, done) => {
-            gulp.start('js', done);
-        }));
-    }
+    watch(CONFIG.js.watchGlob, batch((events, done) => {
+        gulp.start('js', done);
+    }));
 });
 
 //
@@ -225,5 +209,6 @@ gulp.task('prod', () => {
 gulp.task('default', [
     'css',
     'js',
+    'copy',
     'watch'
 ]);
