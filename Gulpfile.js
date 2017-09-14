@@ -14,7 +14,7 @@ const CONFIG = {
         // preprocessor: 'sass',
         // preprocessor: 'stylus',
 
-        // Change these settings to fit your preprocessor of choice
+        // Change these settings to fit your paths and preprocessor of choice
         watchGlob: './src/css/**/*.less',
         inputFileNames: [
             './src/css/app.less',
